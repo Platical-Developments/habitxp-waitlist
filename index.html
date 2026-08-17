@@ -29,17 +29,28 @@
   :root {
     --bg:        #FFFFFF;
     --surface:   #F6F6F7;
-    --raised:    #EFEFF1;
     --border:    #E6E6E9;
-    --accent:    #09765C;  /* mint deepened for text — 4.6:1 on white */
-    --mint:      #9EFFE0;  /* the literal mint, fills only */
-    --on-mint:   #000000;
+    --accent:    #09765C;  /* mint deepened for text — measures 5.59:1 on white */
+    --mint:      #9EFFE0;  /* the literal mint. A fill only: as a hairline on
+                              white it measures 1.18:1 and simply vanishes. */
+    --on-mint:   #000000;  /* 17.83:1 on mint */
+    --ink-mint:  #0A4C3C;  /* secondary text *on* mint — 8.44:1. Tinted from the
+                              mint hue rather than grey: grey on a coloured
+                              surface reads as dirt, and --muted there measures
+                              only 4.28:1 anyway. */
     --text:      #000000;
-    --muted:     #8A8A90;
+    --muted:     #6E6E78;  /* 5.04:1 on white, 4.67:1 on --surface.
+
+                              Was #8A8A90, which measured 3.43:1 and 3.18:1 —
+                              under 4.5:1 in both places. That token colours the
+                              lede, the launch promise, all three proof points,
+                              the field placeholder and the entire footer, so
+                              nearly every word of prose on the page was failing
+                              contrast. Darkened until both grounds pass; still
+                              far enough from --text to stay clearly secondary. */
     --urgent:    #D9432F;
 
     --radius:    0.75rem;
-    --measure:   34rem;
   }
 
   * { box-sizing: border-box; }
@@ -55,7 +66,26 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  a { color: var(--accent); }
+  /* The surfaces the browser draws, not the page.
+     Selection, the caret and underline metrics all ship with defaults that
+     belong to no design system — a blue highlight and a black caret on a
+     green-and-mint page announce that nobody looked. They are cheap to own. */
+
+  a {
+    color: var(--accent);
+    /* Default underlines sit on the baseline and cut the descenders of g, y, p.
+       Dropped clear and thinned so the link reads as text with a line under it
+       rather than text with a line through it. */
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  ::selection {
+    background: var(--mint);
+    color: var(--on-mint);
+  }
+
+  input { caret-color: var(--accent); }
 
   /* A single visible focus treatment, used everywhere. Keyboard users get an
      unmistakable ring; pointer users never see it. */
@@ -214,16 +244,28 @@
     max-width: 27rem;
   }
 
+  /* The success state, and the only mint fill on the page.
+     It replaces a grey card with a 3px accent border down its left edge — the
+     single most recognisable tell of generated UI, and a stripe carrying meaning
+     that the copy already carries. Mint's job in this palette is reward, and
+     handing over an address is the one thing on the page worth rewarding, so the
+     colour arrives exactly once, at the moment it means something.
+
+     Text on mint is tinted from the mint hue, never grey: --muted on mint
+     measures 4.28:1 and fails. */
   .row-success {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
+    background: var(--mint);
     border-radius: var(--radius);
     padding: 1.15rem 1.25rem;
     max-width: 27rem;
   }
-  .row-success h4 { margin: 0 0 0.35rem; font-size: 1.05rem; color: var(--accent); }
-  .row-success p  { margin: 0; font-size: 0.9375rem; color: var(--muted); }
+  .row-success h4 {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+    color: var(--on-mint);
+  }
+  .row-success p  { margin: 0; font-size: 0.9375rem; color: var(--ink-mint); }
 
   /* ---- proof points ----------------------------------------------------- */
 
@@ -283,6 +325,15 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+
+  /* Increase Contrast. Secondary prose goes to full ink rather than staying a
+     shade of grey, and the two bordered surfaces get a defined edge instead of
+     the hairline that hints at one. */
+  @media (prefers-contrast: more) {
+    :root { --muted: #000000; --border: #000000; }
+    .ml-block-form input[type="email"] { border-width: 2px; }
+    .points, footer { border-top-width: 2px; }
   }
 </style>
 </head>
@@ -362,7 +413,13 @@
             </p>
           </div>
 
-          <div class="ml-form-successBody row-success" style="display:none">
+          <!-- role="status" so the swap out of the form is spoken. The element
+               is in the DOM from first paint and merely revealed, which is what
+               makes it a working live region: one injected at the moment of
+               success announces nothing. tabindex allows the handler below to
+               move the caret here once the form it was in has been hidden. -->
+          <div class="ml-form-successBody row-success" style="display:none"
+               role="status" tabindex="-1">
             <div class="ml-form-successContent">
               <h4>Almost there</h4>
               <p>Check your email and click the link to confirm your place on the waitlist.</p>
@@ -432,13 +489,28 @@
 <script>
   function ml_webform_success_44831312() {
     var $ = ml_jQuery || jQuery;
-    $('.ml-subscribe-form-44831312 .row-success').show();
+    var success = $('.ml-subscribe-form-44831312 .row-success');
+    success.show();
     $('.ml-subscribe-form-44831312 .row-form').hide();
+
+    /* The element that had focus — the submit button — is inside the form that
+       just became display:none. Focus therefore collapses to the top of the
+       document, so a keyboard or screen-reader user is returned to the page
+       header with no indication the submission worked. Moving the caret into the
+       message means the next Tab continues from where they actually are. */
+    var el = success.get(0);
+    if (el && typeof el.focus === 'function') el.focus();
   }
 </script>
 <script src="https://groot.mailerlite.com/js/w/webforms.min.js?v83147fa8ce2d95cb73ece7f28b469519" type="text/javascript"></script>
 <script>
+  /* MailerLite's own impression ping, fire-and-forget by design. Left unhandled,
+     a rejection prints an uncaught error to the console — and rejection is the
+     normal case behind a content blocker or on a dropped mobile connection, both
+     routine for a page whose traffic arrives from a phone. Nothing to report, so
+     nothing is reported. */
   fetch("https://assets.mailerlite.com/jsonp/2574390/forms/195775750310200809/takel")
+    .catch(function () {});
 </script>
 
 </body>

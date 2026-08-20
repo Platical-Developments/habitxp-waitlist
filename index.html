@@ -128,7 +128,16 @@
   h1 {
     font-size: clamp(2.25rem, 8.5vw, 3.25rem);
     line-height: 1.05;
-    letter-spacing: -0.035em;
+    /* Tracking is size-specific, so a heading that scales needs tracking that
+       scales with it. -0.035em was one value covering a 36px-to-52px range: too
+       loose at the large end, where letters read as drifting apart the bigger
+       they get.
+
+       This follows the same curve the font-size does. The font reaches 36px at a
+       424px viewport and 52px at 612px; the line below is fitted to those two
+       points, giving -0.03em at the small end and -0.045em at the large one.
+       In rem rather than px so it still follows the reader's text-size setting. */
+    letter-spacing: clamp(-0.146rem, calc(0.11rem - 0.67vw), -0.0675rem);
     font-weight: 700;
     margin: 0 0 1rem;
     text-wrap: balance;
@@ -195,6 +204,17 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(9, 118, 92, 0.16);
   }
+  /* Validate as they go, not on submit.
+     :user-invalid fires only after somebody has typed and left the field, so it
+     never scolds a half-finished address mid-keystroke the way :invalid does.
+     It is also pure CSS, which matters here: MailerLite's script owns validation
+     and finds this form by class name, so anything that touched the markup or
+     its lifecycle could break submission silently. This adds nothing for their
+     script to trip over. The browser's own bubble still names the problem on
+     submit; this is the earlier, quieter warning. */
+  .ml-block-form input[type="email"]:user-invalid {
+    border-color: var(--urgent);
+  }
 
   .ml-block-form button.primary {
     width: 100%;
@@ -208,10 +228,36 @@
     font-weight: 700;
     line-height: 1.4;
     cursor: pointer;
-    transition: transform 0.12s ease, filter 0.12s ease;
+    /* Removes the ~300ms delay a browser holds a tap for in case it becomes a
+       double-tap. There is nothing on this page to double-tap, so the wait buys
+       nothing and costs the one thing directness depends on. */
+    touch-action: manipulation;
+    /* iOS paints a translucent grey box over a tapped element by default. It is
+       a browser surface belonging to no design system, and it fires alongside
+       the scale below, so the press reads as two unrelated things happening.
+       Ours replaces it rather than joining it. */
+    -webkit-tap-highlight-color: transparent;
+    /* ease-out, not ease. `ease` accelerates into the movement, which on a
+       release reads as the button hesitating before it comes back. */
+    transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+                filter 120ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   .ml-block-form button.primary:hover { filter: brightness(0.96); }
-  .ml-block-form button.primary:active { transform: scale(0.99); }
+
+  /* The press is deliberately asymmetric with the release.
+     scale(0.99) was a 1% change — below the threshold at which a change of this
+     size is perceived at all, so the button was effectively dead to the touch.
+     0.97 registers.
+
+     Duration goes to zero on the way down and 160ms on the way up. That looks
+     like an inconsistency and is not: pressing is a direct response to the
+     finger and has to be instantaneous, while releasing is the surface settling
+     back on its own and is allowed to take time. Easing the press would put lag
+     on the input path, which is the one place it is never acceptable. */
+  .ml-block-form button.primary:active {
+    transform: scale(0.97);
+    transition-duration: 0ms;
+  }
 
   .ml-form-embedSubmitLoad {
     display: inline-block;
@@ -236,10 +282,15 @@
     border: 0;
   }
 
+  /* Tracking runs the other way below body size. Large text needs pulling
+     together; small text needs letting apart, or the counters close up and the
+     word stops being readable at a glance. 13px is the smallest type on the
+     page and gets the most. */
   .promise {
     margin: 0.85rem 0 0;
     font-size: 0.8125rem;
-    line-height: 1.5;
+    line-height: 1.55;
+    letter-spacing: 0.01em;
     color: var(--muted);
     max-width: 27rem;
   }
@@ -258,6 +309,31 @@
     border-radius: var(--radius);
     padding: 1.15rem 1.25rem;
     max-width: 27rem;
+
+    /* The one moment on this page that matters, and until now it was a hard cut:
+       the form disappeared and the message was simply *there*, with nothing
+       connecting the two. The whole page exists to produce this instant, and it
+       was the only instant with no craft in it.
+
+       It arrives from the top edge because that is where the form's top edge
+       was — the message takes over the space the form occupied, so it grows out
+       of the same point rather than materialising from its own centre. The
+       scale and the rise are small on purpose: this is a confirmation, not an
+       entrance, and it should feel like the surface settling into place.
+
+       An animation rather than a transition, deliberately. Transitions cannot
+       run from `display: none`, so animating this as a transition would mean
+       adding a class from JavaScript — and if that line ever failed, the success
+       message would sit at opacity 0 and somebody would be told nothing at all.
+       An animation plays by itself the moment the element is displayed, so the
+       existing handler stays untouched and there is no state in which the
+       message can end up invisible. */
+    animation: materialise 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: top center;
+  }
+  @keyframes materialise {
+    from { opacity: 0; transform: translateY(0.5rem) scale(0.98); }
+    to   { opacity: 1; transform: none; }
   }
   .row-success h4 {
     margin: 0 0 0.35rem;
@@ -285,7 +361,12 @@
     margin: 0 0 0.2rem;
     letter-spacing: -0.01em;
   }
-  .points p { margin: 0; font-size: 0.9375rem; color: var(--muted); }
+  .points p {
+    margin: 0;
+    font-size: 0.9375rem;
+    letter-spacing: 0.005em;
+    color: var(--muted);
+  }
   .tick { flex: 0 0 auto; width: 1.25rem; height: 1.25rem; margin-top: 0.2rem; }
 
   /* ---- footer ----------------------------------------------------------- */
@@ -295,6 +376,8 @@
     padding-top: 1.75rem;
     border-top: 1px solid var(--border);
     font-size: 0.8125rem;
+    line-height: 1.55;
+    letter-spacing: 0.01em;
     color: var(--muted);
   }
   footer a { color: var(--muted); }
@@ -318,6 +401,11 @@
     .points li { flex-direction: column; gap: 0.6rem; }
   }
 
+  /* Reduced motion asks for a gentler equivalent, not for nothing.
+     The blanket rule below is the right default — it kills travel, scale and
+     overshoot, which are what actually trigger vestibular discomfort. But taken
+     alone it also killed two things that carry meaning rather than movement,
+     and both are restored underneath it. */
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after {
@@ -325,7 +413,23 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+
+    /* The spinner was being frozen mid-turn. It is the only indication that a
+       submission is in flight, so anybody with this setting was watching a dead
+       grey circle and had no way to tell whether their address had gone
+       anywhere. A small rotation in one corner is not what the setting is for. */
+    .ml-form-embedSubmitLoad {
+      animation: spin 0.9s linear infinite !important;
+    }
+
+    /* The confirmation keeps a plain opacity fade. No rise, no scale, nothing
+       that moves across the screen — but the moment still reads as an arrival
+       rather than a jump cut, which is the part that was doing the work. */
+    .row-success {
+      animation: fade-in 200ms ease-out both !important;
+    }
   }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
   /* Increase Contrast. Secondary prose goes to full ink rather than staying a
      shade of grey, and the two bordered surfaces get a defined edge instead of

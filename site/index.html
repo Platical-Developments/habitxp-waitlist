@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HabitXP — Habits that only ever add up</title>
+    <meta
+      name="description"
+      content="Tick a habit, earn XP, and grow a character who reflects the work. Miss a day and you lose the streak number, nothing else. No account, no ads, on iPhone."
+    />
+
+    <meta property="og:title" content="HabitXP — Habits that only ever add up" />
+    <meta
+      property="og:description"
+      content="Tick a habit, earn XP, and grow a character who reflects the work. Miss a day and you lose the streak number, nothing else."
+    />
+    <meta
+      property="og:image"
+      content="https://platical-developments.github.io/habitxp-waitlist/og.png"
+    />
+    <meta property="og:url" content="https://platical-developments.github.io/habitxp-waitlist/" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#FFFFFF" />
+
+    <link rel="icon" href="./icon.png" />
+    <link rel="apple-touch-icon" href="./icon.png" />
+
+    <!--
+      Inter Tight, display weights only.
+
+      preconnect because the stylesheet and the font files come from two
+      different hosts. Without it the browser pays a fresh DNS lookup and TLS
+      handshake for the second host at the exact moment it needs to paint the
+      headline, which on mobile data is the difference between a headline that
+      appears and one that arrives late in a fallback face and then reflows.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
